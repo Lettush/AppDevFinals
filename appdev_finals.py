@@ -20,7 +20,7 @@ connection.commit()
 quit_program = False
 
 while True:
-    print('=== WELCOME TO THE STUDENT DATABASE ===')
+    print('\n=== WELCOME TO THE STUDENT DATABASE ===')
 
     print('\n>> Main Menu <<\n')
     print('[1] ADD STUDENT')
@@ -40,14 +40,29 @@ while True:
         email = input('Enter the Student\'s email address: ')
         section = input('Enter the Student\'s section: ')
 
-        statement = ('''
-            INSERT INTO students (first_name, last_name, email, section)
-            VALUES (?, ?, ?, ?)
+        cursor.execute('''
+            SELECT COUNT(*) from students
         ''')
-        data_tuple = (first_name, last_name, email, section)
+        result = cursor.fetchall()
+
+        if result[0][0] == 0:
+            statement = ('''
+                            INSERT INTO students (student_no, first_name, last_name, email, section)
+                            VALUES (202200001, ?, ?, ?, ?)
+                        ''')
+            data_tuple = (first_name, last_name, email, section)
+
+        else:
+            statement = ('''
+                INSERT INTO students (first_name, last_name, email, section)
+                VALUES (?, ?, ?, ?)
+            ''')
+            data_tuple = (first_name, last_name, email, section)
 
         cursor.execute(statement, data_tuple)
         connection.commit()
+
+        print('\nUser has been added successfully!')
 
     elif choice == '7':
         break
@@ -56,6 +71,6 @@ while True:
 
     time.sleep(5)
 
-print('\n=== THANKS FOR USING THE STUDENT DATABASE ===')
+print('\n>>> THANKS FOR USING THE STUDENT DATABASE <<<')
 time.sleep(5)
 connection.close()
