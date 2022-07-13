@@ -3,6 +3,7 @@ import time
 from tabulate import tabulate
 import re
 
+# DB Connection
 connection = sqlite3.connect('students.db')
 cursor = connection.cursor()
 
@@ -74,7 +75,7 @@ def add_student():
 
     print('\nUser has been added successfully!')
 
-
+# Search Student
 def search_student():
     if check_empty_database():
         return print(' ** Database is empty! **')
@@ -111,6 +112,61 @@ def search_student():
             break
         print('Invalid choice.')
 
+# Edit Student
+def edit_student():
+    if check_empty_database():
+        return print(' ** Database is empty! **')
+
+    print('\n>> SEARCH STUDENTS <<')
+    while True:
+        search_choice = int(input('Would you like to search using [1] Student Number or [2] Last Name?: '))
+
+        if search_choice == 1:
+            student_no = int(input('Enter the student number of the student: '))
+            cursor.execute('''
+                SELECT * FROM students WHERE student_no = ?
+            ''', (student_no,))
+
+            # Retrieves results from the database
+            result = cursor.fetchall()
+
+            if not result:
+                return print(f' ** No students were found for {student_no}. Try a different student number. **')
+
+            # Tabulates result
+            print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
+
+            # Updates student details
+            first_name = input('Enter student first name: ')
+            last_name = input('Enter student last name: ')
+            email_address = input('Enter email address: ')
+
+            # Checks if email is valid
+            if check_email(email_address):
+                break
+
+            section = input('Enter section: ')
+
+            cursor.execute('''
+                UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
+                WHERE student_no = ?
+            ''', (first_name, last_name, email_address, section, student_no))
+
+            break
+        if search_choice == 2:
+            last_name = input('Enter the last name of the student/s: ').title()
+            cursor.execute('''
+                            SELECT * FROM students WHERE last_name = ?
+                        ''', (last_name,))
+
+            result = cursor.fetchall()
+
+            if not result:
+                return print(f' ** No students were found for {last_name}. Try a different last name. **')
+
+            print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
+            break
+        print('Invalid choice.')
 
 # Display All Students
 def display_all_students():
