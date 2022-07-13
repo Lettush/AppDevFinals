@@ -73,7 +73,7 @@ def add_student():
     cursor.execute(statement, data_tuple)
     connection.commit()
 
-    print('\nUser has been added successfully!')
+    print('\n[System]: Student has been added successfully!')
 
 # Search Student
 def search_student():
@@ -110,7 +110,7 @@ def search_student():
 
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
             break
-        print('Invalid choice.')
+        print('[System]: Invalid choice.')
 
 # Edit Student
 def edit_student():
@@ -119,9 +119,9 @@ def edit_student():
 
     print('\n>> SEARCH STUDENTS <<')
     while True:
-        search_choice = int(input('Would you like to search using [1] Student Number or [2] Last Name?: '))
+        edit_choice = int(input('Would you like to search using: [1] Student Number or [2] Last Name?: '))
 
-        if search_choice == 1:
+        if edit_choice == 1:
             student_no = int(input('Enter the student number of the student: '))
             cursor.execute('''
                 SELECT * FROM students WHERE student_no = ?
@@ -142,18 +142,33 @@ def edit_student():
             email_address = input('Enter email address: ')
 
             # Checks if email is valid
-            if check_email(email_address):
-                break
+            # Checks if email is valid
+            while not check_email(email_address):
+                email_address = input('Enter email address: ')  
 
             section = input('Enter section: ')
 
-            cursor.execute('''
-                UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
-                WHERE student_no = ?
-            ''', (first_name, last_name, email_address, section, student_no))
+            if check_empty_database():
+                statement = ('''
+                            UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
+                            WHERE student_no = ?
+                ''')
+                data_tuple = (first_name, last_name, email_address, section, student_no)
+
+            else:
+                statement = ('''
+                            UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
+                            WHERE student_no = ?
+                ''')
+                data_tuple = (first_name, last_name, email_address, section, student_no)
+
+            cursor.execute(statement, data_tuple)
+            connection.commit()
+
+            print('\n[System]: Student has edited successfully!')
 
             break
-        if search_choice == 2:
+        if edit_choice == 2:
             last_name = input('Enter the last name of the student/s: ').title()
             cursor.execute('''
                             SELECT * FROM students WHERE last_name = ?
@@ -164,7 +179,39 @@ def edit_student():
             if not result:
                 return print(f' ** No students were found for {last_name}. Try a different last name. **')
 
+            # Tabulates result
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
+
+            # Updates student details
+            first_name = input('Enter student first name: ')
+            last_name = input('Enter student last name: ')
+            email_address = input('Enter email address: ')
+
+            # Checks if email is valid
+            while not check_email(email_address):
+                email_address = input('Enter email address: ')               
+
+            section = input('Enter section: ')
+
+            if check_empty_database():
+                statement = ('''
+                            UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
+                            WHERE last_name = ?
+                ''')
+                data_tuple = (first_name, last_name, email_address, section, last_name)
+
+            else:
+                statement = ('''
+                            UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
+                            WHERE last_name = ?
+                ''')
+                data_tuple = (first_name, last_name, email_address, section, last_name)
+
+            cursor.execute(statement, data_tuple)
+            connection.commit()
+
+            print('\n[System]: User has edited successfully!')
+
             break
         print('Invalid choice.')
 
@@ -218,6 +265,8 @@ while True:
         add_student()
     elif choice == 2:
         search_student()
+    elif choice == 3:
+        edit_student()
     elif choice == 5:
         display_all_students()
     elif choice == 6:
