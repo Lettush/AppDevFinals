@@ -269,17 +269,23 @@ def delete_student():
 
             if not result:
                 return print(f' ** No students were found for {student_no}. Try a different student number. **')
-            
-            # SQL Query
-            cursor.execute('''
-                DELETE FROM students WHERE student_no = ?
-            ''', (student_no,))
+            print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
+            choice = str(input('Are you sure you want to delete this student? [y/n]'))
+            if choice == "y" or choice == "Y":
+                # SQL Query
+                cursor.execute('''
+                    DELETE FROM students WHERE student_no = ?
+                ''', (student_no,))
 
-            # Saves changes to db
-            connection.commit()
+                # Saves changes to db
+                connection.commit()
 
-            # Confirmation message
-            display_success("delete", student_no)
+                # Confirmation message
+                display_success("delete", student_no)
+            if choice == "n" or choice == "N":
+                print("\nCanceling deletion.")
+            else:
+                display_invalid_choice()
             break
 
 # Display All Students
