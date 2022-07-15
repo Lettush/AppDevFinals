@@ -247,6 +247,28 @@ def display_section():
 
     print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
 
+def delete_student():
+    if check_empty_database():
+        return print(' ** Database is empty! **')
+
+    print('\n>> DELETE STUDENTS <<')
+    while True:
+            student_no = int(input('Enter the student number of the student: '))
+            cursor.execute('''
+                SELECT * FROM students WHERE student_no = ?
+            ''', (student_no,))
+
+            result = cursor.fetchall()
+
+            if not result:
+                return print(f' ** No students were found for {student_no}. Try a different student number. **')
+            cursor.execute('''
+                DELETE FROM students WHERE student_no = ?
+            ''', (student_no,))
+            connection.commit()
+
+            print(f'Deleted student with student number {student_no}')
+            break
 
 print('\n=== WELCOME TO THE STUDENT DATABASE ===')
 while True:
@@ -267,6 +289,8 @@ while True:
         search_student()
     elif choice == 3:
         edit_student()
+    elif choice == 4:
+        delete_student()
     elif choice == 5:
         display_all_students()
     elif choice == 6:
