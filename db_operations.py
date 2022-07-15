@@ -1,12 +1,15 @@
-import sqlite3
-import time
-from tabulate import tabulate
 import re
+import sqlite3
+from tabulate import tabulate
+
+from display import display_empty_db, display_invalid_choice, display_success
+
+# Global Variables
+email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
 # DB Connection
 connection = sqlite3.connect('students.db')
 cursor = connection.cursor()
-
 cursor.execute('''CREATE TABLE IF NOT EXISTS 
         students
         (
@@ -18,10 +21,8 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS
         )
 ''')
 connection.commit()
-quit_program = False
-email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
-
+# Checkers
 def check_email(email):
     if re.fullmatch(email_regex, email):
         return True
@@ -29,40 +30,42 @@ def check_email(email):
         print('\nINVALID EMAIL! Please enter a valid email address.\n')
         return False
 
-
 def check_empty_database():
     cursor.execute('''
                     SELECT COUNT(*) from students
                 ''')
     result = cursor.fetchall()
-
     if result[0][0] == 0:
         # Database is Empty
         return True
     return False
 
 
-# Add Students
+# >> CRUD OPERATIONS <<
+# Add Student
 def add_student():
+
     print('\n>> ADD STUDENT << ')
+
+    # Gets student information
     first_name = input('Enter the Student\'s first name: ').title()
     last_name = input('Enter the Student\'s last name: ').title()
 
+    # Email Validation
     while True:
         email = input('Enter the Student\'s email address: ')
-
         if check_email(email):
             break
 
     section = input('Enter the Student\'s section: ').upper()
 
+    # Database validation
     if check_empty_database():
         statement = ('''
                                 INSERT INTO students (student_no, first_name, last_name, email, section)
                                 VALUES (202200001, ?, ?, ?, ?)
                             ''')
         data_tuple = (first_name, last_name, email, section)
-
     else:
         statement = ('''
                     INSERT INTO students (first_name, last_name, email, section)
@@ -70,136 +73,159 @@ def add_student():
                 ''')
         data_tuple = (first_name, last_name, email, section)
 
+    # Executes SQL Query
     cursor.execute(statement, data_tuple)
+
+    # Saves changes to DB
     connection.commit()
 
-    print('\n[System]: Student has been added successfully!')
+    # Success Message
+    display_success("add", "")
 
 # Search Student
 def search_student():
+
+    # Database validation
     if check_empty_database():
-        return print(' ** Database is empty! **')
+        return display_empty_db
 
     print('\n>> SEARCH STUDENTS <<')
+
     while True:
         search_choice = int(input('Would you like to search using [1] Student Number or [2] Last Name?: '))
 
+        # For student_no search
         if search_choice == 1:
             student_no = int(input('Enter the student number of the student: '))
+
+            # SQL Query
             cursor.execute('''
                 SELECT * FROM students WHERE student_no = ?
             ''', (student_no,))
 
+            # Fetches results from SQL Query
             result = cursor.fetchall()
 
             if not result:
                 return print(f' ** No students were found for {student_no}. Try a different student number. **')
 
+            # Tabulates results
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
             break
+        
+        # For last_name search
         if search_choice == 2:
             last_name = input('Enter the last name of the student/s: ').title()
+
+            # SQL Query
             cursor.execute('''
                             SELECT * FROM students WHERE last_name = ?
                         ''', (last_name,))
-
+            
+            # Fetches results from SQL Query
             result = cursor.fetchall()
-
             if not result:
                 return print(f' ** No students were found for {last_name}. Try a different last name. **')
 
+            # Tabulates results
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
             break
-        print('[System]: Invalid choice.')
+
+        # Error Message
+        display_invalid_choice()
 
 # Edit Student
 def edit_student():
+    # Database Validation
     if check_empty_database():
-        return print(' ** Database is empty! **')
+        return display_empty_db
 
     print('\n>> SEARCH STUDENTS <<')
+
     while True:
         edit_choice = int(input('Would you like to search using: [1] Student Number or [2] Last Name?: '))
 
+        # For student_no search
         if edit_choice == 1:
+
             student_no = int(input('Enter the student number of the student: '))
+
+            # SQL Query
             cursor.execute('''
                 SELECT * FROM students WHERE student_no = ?
             ''', (student_no,))
 
             # Retrieves results from the database
             result = cursor.fetchall()
-
             if not result:
                 return print(f' ** No students were found for {student_no}. Try a different student number. **')
-
+            
             # Tabulates result
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
-
-            # Updates student details
+            
+            # Gets updated student details
             first_name = input('Enter student first name: ')
             last_name = input('Enter student last name: ')
             email_address = input('Enter email address: ')
 
-            # Checks if email is valid
-            # Checks if email is valid
+            # Email Validation
             while not check_email(email_address):
-                email_address = input('Enter email address: ')  
+                email_address = input('Enter email address: ')
 
             section = input('Enter section: ')
-
+            
             if check_empty_database():
                 statement = ('''
                             UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
                             WHERE student_no = ?
                 ''')
                 data_tuple = (first_name, last_name, email_address, section, student_no)
-
             else:
                 statement = ('''
                             UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
                             WHERE student_no = ?
                 ''')
                 data_tuple = (first_name, last_name, email_address, section, student_no)
-
+            
+            # Executes SQL Command
             cursor.execute(statement, data_tuple)
+
+            # Saves the DB changes
             connection.commit()
 
-            print('\n[System]: Student has edited successfully!')
-
+            display_success("edit", student_no)
             break
+
+        # For Last name search
         if edit_choice == 2:
             last_name = input('Enter the last name of the student/s: ').title()
             cursor.execute('''
                             SELECT * FROM students WHERE last_name = ?
                         ''', (last_name,))
-
             result = cursor.fetchall()
-
             if not result:
                 return print(f' ** No students were found for {last_name}. Try a different last name. **')
-
+            
             # Tabulates result
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
-
-            # Updates student details
+            
+            # Gets updated student details
             first_name = input('Enter student first name: ')
             last_name = input('Enter student last name: ')
             email_address = input('Enter email address: ')
 
-            # Checks if email is valid
+            # Email validation
             while not check_email(email_address):
                 email_address = input('Enter email address: ')               
-
             section = input('Enter section: ')
 
+            # Database Validation
             if check_empty_database():
                 statement = ('''
                             UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
                             WHERE last_name = ?
                 ''')
                 data_tuple = (first_name, last_name, email_address, section, last_name)
-
             else:
                 statement = ('''
                             UPDATE Students SET first_name = ?, last_name = ?, email = ?, section = ?
@@ -207,102 +233,96 @@ def edit_student():
                 ''')
                 data_tuple = (first_name, last_name, email_address, section, last_name)
 
+            # Executes SQL Query
             cursor.execute(statement, data_tuple)
+
+            # Saves changes to DB
             connection.commit()
 
-            print('\n[System]: User has edited successfully!')
+            # Success message
+            display_success("edit", student_no)
 
             break
-        print('Invalid choice.')
 
-# Display All Students
-def display_all_students():
-    if check_empty_database():
-        return print(' ** Database is empty! **')
+        # Error message
+        display_invalid_choice()
 
-    print('\n>> DISPLAY ALL STUDENTS << ')
-    cursor.execute('''
-        SELECT * FROM students
-    ''')
-    result = cursor.fetchall()
-
-    print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
-
-
-# Display Section
-def display_section():
-    if check_empty_database():
-        return print(' ** Database is empty! **')
-
-    print('\n>> DISPLAY SECTIONS <<')
-    section = input('Enter which section should be searched: ').upper()
-
-    cursor.execute('''
-        SELECT * FROM students WHERE section = ?
-    ''', (section,))
-    result = cursor.fetchall()
-
-    if not result:
-        return print(f' ** No students were found for {section}. Try a different section. **')
-
-    print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
-
+# Deletes Student
 def delete_student():
+
+    # Database Validation
     if check_empty_database():
-        return print(' ** Database is empty! **')
+        return display_empty_db
 
     print('\n>> DELETE STUDENTS <<')
+
     while True:
             student_no = int(input('Enter the student number of the student: '))
+
+            # SQL Query
             cursor.execute('''
                 SELECT * FROM students WHERE student_no = ?
             ''', (student_no,))
 
+            # Retrieves results from SQL query
             result = cursor.fetchall()
 
             if not result:
                 return print(f' ** No students were found for {student_no}. Try a different student number. **')
+            
+            # SQL Query
             cursor.execute('''
                 DELETE FROM students WHERE student_no = ?
             ''', (student_no,))
+
+            # Saves changes to db
             connection.commit()
 
-            print(f'Deleted student with student number {student_no}')
+            # Confirmation message
+            display_success("delete", student_no)
             break
 
-print('\n=== WELCOME TO THE STUDENT DATABASE ===')
-while True:
-    print('\n>> Main Menu <<\n')
-    print('[1] ADD STUDENT')
-    print('[2] SEARCH STUDENT')
-    print('[3] EDIT STUDENT')
-    print('[4] DELETE STUDENT')
-    print('[5] DISPLAY ALL STUDENTS')
-    print('[6] DISPLAY SECTIONS')
-    print('[7] EXIT')
+# Display All Students
+def display_all_students():
 
-    choice = int(input('\nEnter a choice [1-7]: '))
+    # Database Validation
+    if check_empty_database():
+        return display_empty_db
+    print('\n>> DISPLAY ALL STUDENTS << ')
 
-    if choice == 1:
-        add_student()
-    elif choice == 2:
-        search_student()
-    elif choice == 3:
-        edit_student()
-    elif choice == 4:
-        delete_student()
-    elif choice == 5:
-        display_all_students()
-    elif choice == 6:
-        display_section()
-    elif choice == 7:
-        break
-    else:
-        print('\n ** INVALID CHOICE! Please enter a number from 1-7. **\n')
+    # SQL Query
+    cursor.execute('''
+        SELECT * FROM students
+    ''')
+    
+    # Results from SQL
+    result = cursor.fetchall()
 
-    time.sleep(2.5)
+    # Tabulates results
+    print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
 
-# Exit Message
-print('\n>>> THANKS FOR USING THE STUDENT DATABASE <<<')
-time.sleep(2.5)
-connection.close()
+# Display By Section
+def display_section():
+
+    # Database validation
+    if check_empty_database():
+        return display_empty_db
+
+    print('\n>> DISPLAY SECTIONS <<')
+
+    section = input('Enter which section should be searched: ').upper()
+
+    # SQL Query
+    cursor.execute('''
+        SELECT * FROM students WHERE section = ?
+    ''', (section,))
+
+    # Results
+    result = cursor.fetchall()
+
+    if not result:
+        return print(f' ** [System]: No students were found for {section}. Try a different section. **')
+
+    # Tabulates results
+    print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
+
