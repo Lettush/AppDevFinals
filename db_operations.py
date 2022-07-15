@@ -257,6 +257,10 @@ def delete_student():
     print('\n>> DELETE STUDENTS <<')
 
     while True:
+        edit_choice = int(input('Would you like to search using: [1] Student Number or [2] Last Name?: '))
+
+        # For student_no search
+        if edit_choice == 1:
             student_no = int(input('Enter the student number of the student: '))
 
             # SQL Query
@@ -270,7 +274,7 @@ def delete_student():
             if not result:
                 return print(f' ** No students were found for {student_no}. Try a different student number. **')
             print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
-            choice = str(input('Are you sure you want to delete this student? [y/n]'))
+            choice = str(input('Are you sure you want to delete this student? [y/n] '))
             if choice == "y" or choice == "Y":
                 # SQL Query
                 cursor.execute('''
@@ -282,11 +286,45 @@ def delete_student():
 
                 # Confirmation message
                 display_success("delete", student_no)
+                break
             if choice == "n" or choice == "N":
                 print("\nCanceling deletion.")
             else:
                 display_invalid_choice()
-            break
+        if edit_choice == 2:
+            last_name = str(input('Enter the last name of the student: '))
+
+            # SQL Query
+            cursor.execute('''
+                SELECT * FROM students WHERE last_name = ?
+            ''', (last_name,))
+
+            # Retrieves results from SQL query
+            result = cursor.fetchall()
+
+            if not result:
+                return print(f' ** No students were found for {last_name}. Try a different last name. **')
+            print(tabulate(result, headers=['Student No.', 'First Name', 'Last Name', 'Email Address', 'Section']))
+            if len(result) >= 2:
+                print('Multiple students found. Please enter the student number instead.\n')
+            if len(result) == 1:
+                choice = str(input('Are you sure you want to delete this student? [y/n] '))
+                if choice == "y" or choice == "Y":
+                    # SQL Query
+                    cursor.execute('''
+                        DELETE FROM students WHERE last_name = ?
+                    ''', (last_name,))
+
+                    # Saves changes to db
+                    connection.commit()
+
+                    # Confirmation message
+                    display_success("delete", last_name)
+                    break
+                if choice == "n" or choice == "N":
+                    print("\nCanceling deletion.")
+                else:
+                    display_invalid_choice()
 
 # Display All Students
 def display_all_students():
