@@ -12,3 +12,8 @@ Requirements:
 - Python 3.8+
 - Tabulate 0.8.10
 
+Contributors:
+- **HORTALEZA**, Jared Neil
+- **PLUMO**, Clem Vincent
+- **VALLEJO**, Rafael Luis
+
